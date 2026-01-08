@@ -67,6 +67,27 @@
           <div class="event-date">12th december 2022</div>
         </div>
         <div class="events"></div>
+           
+            <!-- ADD THIS FITNESS NAVIGATION -->
+    <div class="fitness-nav">
+        <h3 style="color: #878895; margin-bottom: 10px;">Fitness Tools</h3>
+        <div class="nav-buttons">
+            <button class="nav-btn" data-page="workout">
+                <i class="fas fa-dumbbell"></i> Workout Builder
+            </button>
+            <button class="nav-btn" data-page="analytics">
+                <i class="fas fa-chart-line"></i> Analytics
+            </button>
+            <button class="nav-btn" data-page="spreadsheets">
+                <i class="fas fa-table"></i> Spreadsheets
+            </button>
+            <button class="nav-btn" data-page="progress">
+                <i class="fas fa-trophy"></i> Progress
+            </button>
+        </div>
+    </div>
+    <!-- END FITNESS NAVIGATION -->
+
         <div class="add-event-wrapper">
           <div class="add-event-header">
             <div class="title">Add Event</div>
@@ -110,6 +131,59 @@
         </div>
     </div>
 </div>
+
+<!-- =========================================== -->
+<!-- FULL PAGE FITNESS VIEWS -->
+<!-- =========================================== -->
+
+<!-- Workout Builder Page (Hidden by default) -->
+<div id="workout-page" class="full-page" style="display: none;">
+    <div class="page-header">
+        <button class="back-btn">← Back to Calendar</button>
+        <h1>💪 Workout Builder</h1>
+    </div>
+    <div class="page-content">
+        <p>Build and save your workout routines here.</p>
+        <!-- Your workout builder content will go here -->
+    </div>
+</div>
+
+<!-- Analytics Page (Hidden by default) -->
+<div id="analytics-page" class="full-page" style="display: none;">
+    <div class="page-header">
+        <button class="back-btn">← Back to Calendar</button>
+        <h1>📊 Analytics</h1>
+    </div>
+    <div class="page-content">
+        <p>View charts and statistics about your progress.</p>
+        <!-- Analytics content will go here -->
+    </div>
+</div>
+
+<!-- Spreadsheets Page (Hidden by default) -->
+<div id="spreadsheets-page" class="full-page" style="display: none;">
+    <div class="page-header">
+        <button class="back-btn">← Back to Calendar</button>
+        <h1>📋 Spreadsheets</h1>
+    </div>
+    <div class="page-content">
+        <p>Manage your fitness spreadsheets.</p>
+        <!-- Spreadsheet content will go here -->
+    </div>
+</div>
+
+<!-- Progress Page (Hidden by default) -->
+<div id="progress-page" class="full-page" style="display: none;">
+    <div class="page-header">
+        <button class="back-btn">← Back to Calendar</button>
+        <h1>📈 Progress</h1>
+    </div>
+    <div class="page-content">
+        <p>Track your fitness journey progress.</p>
+        <!-- Progress content will go here -->
+    </div>
+</div>
+
     <script src="script.js"></script>
   </body>
 </html>

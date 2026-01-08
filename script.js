@@ -483,3 +483,71 @@ function convertTime(time) {
   time = timeHour + ":" + timeMin + " " + timeFormat;
   return time;
 }
+
+// ============================================
+// FULL PAGE NAVIGATION
+// ============================================
+
+// Store the current view
+let currentView = 'calendar';
+
+// Function to hide ALL views
+function hideAllViews() {
+    // Hide calendar container
+    document.querySelector('.container').style.display = 'none';
+    
+    // Hide all full pages
+    document.querySelectorAll('.full-page').forEach(page => {
+        page.style.display = 'none';
+    });
+}
+
+// Function to show calendar view
+function showCalendarView() {
+    hideAllViews();
+    document.querySelector('.container').style.display = 'flex';
+    currentView = 'calendar';
+    console.log('Showing calendar view');
+}
+
+// Function to show a fitness page
+function showFitnessPage(pageId) {
+    hideAllViews();
+    document.getElementById(pageId + '-page').style.display = 'block';
+    currentView = pageId;
+    console.log(`Showing ${pageId} page`);
+}
+
+// Set up navigation buttons
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handlers to fitness navigation buttons
+    document.querySelectorAll('.nav-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const pageId = this.getAttribute('data-page');
+            showFitnessPage(pageId);
+        });
+    });
+    
+    // Add click handlers to back buttons
+    document.querySelectorAll('.back-btn').forEach(button => {
+        button.addEventListener('click', showCalendarView);
+    });
+    
+    // Optional: Add keyboard navigation (Esc to go back)
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && currentView !== 'calendar') {
+            showCalendarView();
+        }
+    });
+    
+    console.log('Fitness navigation loaded');
+});
+
+// Optional: Add keyboard shortcut (Esc to go back)
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        goBackToCalendar();
+    }
+});
+
+console.log('Fitness navigation loaded');

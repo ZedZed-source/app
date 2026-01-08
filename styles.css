@@ -1,4 +1,3 @@
-
 :root {
   --primary-clr: #b38add;
 }
@@ -38,7 +37,6 @@ html, body {
     width: 100%;
 }
 
-/* ADD this to .container */
 .container {
     position: relative;
     width: 1200px;
@@ -51,7 +49,7 @@ html, body {
     background-color: #373c4f;
 }
 .left {
-  width: 60%;
+  width: 62%;
   padding: 20px;
 }
 .calendar {
@@ -251,9 +249,11 @@ html, body {
 }
 .container .right {
   position: relative;
-  width: 40%;
+  width: 38%;
   min-height: 100%;
-  padding: 20px 0;
+  padding: 10px 0; /* Reduced from 20px */
+  display: flex;
+  flex-direction: column;
 }
 
 .right .today-date {
@@ -265,9 +265,9 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 0 40px;
-  padding-left: 70px;
-  margin-top: 50px;
-  margin-bottom: 20px;
+  padding-left: 85px;
+  margin-top: 20px; /* Reduced from 50px */
+  margin-bottom: 15px; /* Reduced from 20px */
   text-transform: capitalize;
 }
 .right .today-date .event-day {
@@ -282,12 +282,13 @@ html, body {
 .events {
   width: 100%;
   height: 100%;
-  max-height: 600px;
+  max-height: 400px; /* Reduced from 600px to make room for buttons */
   overflow-x: hidden;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   padding-left: 4px;
+  flex-grow: 1; /* Takes available space */
 }
 .events .event {
   position: relative;
@@ -357,7 +358,7 @@ html, body {
 }
 .add-event {
   position: absolute;
-  bottom: 30px;
+  bottom: 240px; /* MOVED UP - was 30px */
   right: 30px;
   width: 40px;
   height: 40px;
@@ -371,6 +372,7 @@ html, body {
   border-radius: 50%;
   background-color: transparent;
   cursor: pointer;
+  z-index: 10; /* Ensure it's above other elements */
 }
 .add-event:hover {
   opacity: 1;
@@ -390,7 +392,7 @@ html, body {
 }
 .add-event-wrapper {
   position: absolute;
-  bottom: 100px;
+  bottom: 280px; /* MOVED UP - was 100px */
   left: 50%;
   width: 90%;
   max-height: 0;
@@ -523,7 +525,7 @@ html, body {
     padding-bottom: 340px;
   }
   .add-event-wrapper {
-    bottom: 100px;
+    bottom: 280px; /* Updated for mobile */
   }
 }
 @media screen and (max-width: 500px) {
@@ -546,50 +548,93 @@ html, body {
   }
 }
 
-.credits {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  text-align: center;
-  padding: 10px;
-  font-size: 12px;
-  color: #fff;
-  background-color: #b38add;
-}
-.credits a {
-  color: #fff;
-  text-decoration: none;
-  font-weight: 600;
-}
-.credits a:hover {
-  text-decoration: underline;
-}
+/* =========================================== */
+/* FULL PAGE VIEWS */
+/* =========================================== */
 
-/* Add to styles.css */
-.modal {
+.full-page {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.5);
+    background-color: #373c4f;
+    z-index: 1000;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #4a4f64;
+}
+
+.back-btn {
+    padding: 10px 20px;
+    background-color: var(--primary-clr);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.back-btn:hover {
+    background-color: #9c7bc9;
+}
+
+.page-header h1 {
+    color: white;
+    font-size: 2rem;
+}
+
+.page-content {
+    color: #e2e1dc;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+/* FITNESS NAVIGATION IN CALENDAR */
+.fitness-nav {
+    padding: 15px;
+    background-color: #4a4f64;
+    border-radius: 10px;
+    margin-top: 117px;
+    margin-bottom: 10px;
+    flex-shrink: 0; /* Prevents shrinking */
+    margin-left: 15px;
+}
+
+.nav-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.nav-btn {
+    padding: 15px;
+    background-color: #373c4f;
+    border: 2px solid var(--primary-clr);
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
-}
-
-.modal-content {
-    background: white;
-    padding: 20px;
-    border-radius: 5px;
-    color: #333;
-}
-
-.modal-buttons {
-    display: flex;
     gap: 10px;
-    margin-top: 15px;
-    justify-content: center;
+    transition: all 0.3s;
+}
+
+.nav-btn:hover {
+    background-color: var(--primary-clr);
+    transform: translateY(-3px);
+}
+
+.nav-btn i {
+    font-size: 1.2rem;
 }
