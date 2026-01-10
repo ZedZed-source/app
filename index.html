@@ -143,8 +143,16 @@
         <h1>💪 Workout Builder</h1>
     </div>
     <div class="page-content">
+        <!-- ADD THESE BUTTONS -->
+        <div class="workout-builder-options">
+            <button class="workout-option-btn" data-page="daymaker">
+                ⚙️ Day Creator
+            </button>
+            <button class="workout-option-btn" data-page="workoutcreator">
+                📋 Workout Creator
+            </button>
+        </div>
         <p>Build and save your workout routines here.</p>
-        <!-- Your workout builder content will go here -->
     </div>
 </div>
 
@@ -184,6 +192,127 @@
     </div>
 </div>
 
+<!-- Day Maker Page (Hidden by default) -->
+<div id="daymaker-page" class="full-page" style="display: none;">
+    <div class="page-header">
+        <button class="back-btn" id="daymaker-back">← Back to Workout Builder</button>
+        <h1>⚙️ Day Maker</h1>
+    </div>
+    
+    <div class="daymaker-container">
+        <p class="page-description">Design individual workout days with specific exercises</p>
+
+        <!-- Form section -->
+        <div class="day-form">
+            <div class="form-group">
+                <label for="day-name">Day Name</label>
+                <input type="text" id="day-name" placeholder="e.g., Arm Day, Leg Day, Chest Day" />
+            </div>
+
+            <div class="form-group">
+                <label>Select Icon</label>
+                <div id="icon-grid" class="icon-grid">
+                    <div class="icon-option" data-icon="💪">💪</div>
+                    <div class="icon-option" data-icon="🦵">🦵</div>
+                    <div class="icon-option" data-icon="👕">👕</div>
+                    <div class="icon-option" data-icon="🔙">🔙</div>
+                    <div class="icon-option" data-icon="🤷">🤷</div>
+                    <div class="icon-option" data-icon="🔁">🔁</div>
+                    <div class="icon-option" data-icon="🏋️">🏋️</div>
+                </div>
+                <input type="hidden" id="day-icon" value="🏋️" />
+            </div>
+
+            <h3>Exercises</h3>
+            <div id="exercises-container">
+                <!-- Exercises will be added here dynamically -->
+            </div>
+
+            <div class="form-actions">
+                <button id="addExerciseBtn" type="button">➕ Add Exercise</button>
+                <button id="saveDayBtn" type="button">💾 Save Day</button>
+                <button id="clearFormBtn" type="button">🧹 Clear Form</button>
+            </div>
+        </div>
+
+        <div class="saved-days">
+            <h2>Your Saved Days</h2>
+            <p>Click on a saved day to load it for editing</p>
+            <div class="saved-days-list" id="saved-days-list">
+                <!-- Saved days will be displayed here dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Workout Creator Page (Hidden by default) -->
+<div id="workoutcreator-page" class="full-page" style="display: none;">
+    <div class="page-header">
+        <button class="back-btn" id="workoutcreator-back">← Back to Workout Builder</button>
+        <h1>📋 Workout Creator</h1>
+    </div>
+    
+    <div class="workoutcreator-container">
+        <div class="workout-info">
+            <input type="text" id="workout-name" placeholder="Enter workout plan name..." 
+                   value="My Workout Plan">
+            <button id="save-workout-btn" class="save-btn">💾 Save Plan</button>
+        </div>
+        
+        <!-- Week Navigation -->
+        <div class="week-nav">
+            <button id="prev-week-btn" class="week-nav-btn">← Week 1</button>
+            <h2 id="week-title">Week 1</h2>
+            <button id="next-week-btn" class="week-nav-btn">Week 2 →</button>
+        </div>
+        
+        <!-- Week 1 Calendar -->
+        <div id="week-1" class="week-calendar active-week">
+            <div class="calendar-grid">
+                <div class="calendar-header">Monday</div>
+                <div class="calendar-header">Tuesday</div>
+                <div class="calendar-header">Wednesday</div>
+                <div class="calendar-header">Thursday</div>
+                <div class="calendar-header">Friday</div>
+                <div class="calendar-header">Saturday</div>
+                <div class="calendar-header">Sunday</div>
+                
+                <!-- Day 1-7 will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Week 2 Calendar (hidden by default) -->
+        <div id="week-2" class="week-calendar" style="display: none;">
+            <div class="calendar-grid">
+                <div class="calendar-header">Monday</div>
+                <div class="calendar-header">Tuesday</div>
+                <div class="calendar-header">Wednesday</div>
+                <div class="calendar-header">Thursday</div>
+                <div class="calendar-header">Friday</div>
+                <div class="calendar-header">Saturday</div>
+                <div class="calendar-header">Sunday</div>
+                
+                <!-- Day 8-14 will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Day Selection Modal -->
+        <div id="day-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Select Day Type</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body" id="day-options">
+                    <!-- Options will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
     <script src="script.js"></script>
+    <script src="daymaker.js"></script>
+    <script src="workoutcreator.js"></script> 
   </body>
 </html>

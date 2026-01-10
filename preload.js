@@ -1,12 +1,9 @@
-// This file is a BRIDGE for future desktop features
-// Currently empty - your calendar works without it
+// preload.js - Add dialog functions
+const { contextBridge, ipcRenderer } = require('electron');
 
-const { contextBridge } = require('electron');
+contextBridge.exposeInMainWorld('electronAPI', {
+    showDialog: (options) => ipcRenderer.invoke('show-dialog', options),
+    showAlert: (message) => ipcRenderer.invoke('show-alert', message)
+});
 
-// We'll add functions here LATER when you need:
-// - File saving
-// - System notifications
-// - Database access
-
-// For now, it can be empty or just this:
-console.log('Preload script loaded');
+console.log('Preload script loaded with dialog API');

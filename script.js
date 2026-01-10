@@ -399,14 +399,15 @@ addEventSubmit.addEventListener("click", () => {
   }
 });
 
-// Replace the confirm() section (around line 254) with:
+// ============================================
+// CONFIRM MODAL FOR EVENT DELETION
+// ============================================
 
-// Add at the top with other DOM elements
 const confirmModal = document.getElementById('confirm-modal');
 const confirmYes = document.getElementById('confirm-yes');
 const confirmNo = document.getElementById('confirm-no');
 
-// Replace the event listener (around line 254)
+// Replace the event listener for event deletion
 eventsContainer.addEventListener("click", (e) => {
   if (e.target.classList.contains("event")) {
     const eventTitle = e.target.children[0].children[1].innerHTML;
@@ -511,16 +512,56 @@ function showCalendarView() {
 }
 
 // Function to show a fitness page
+// Function to show a fitness page
+// Function to show a fitness page
 function showFitnessPage(pageId) {
+    console.log(`=== showFitnessPage called for: ${pageId} ===`);
+    
+    // Clean up any open dialogs first
+    const existingDialogs = document.querySelectorAll('.custom-dialog-overlay');
+    console.log(`Found ${existingDialogs.length} existing dialogs to clean up`);
+    existingDialogs.forEach(dialog => {
+        if (dialog.parentNode) {
+            dialog.parentNode.removeChild(dialog);
+        }
+    });
+    
     hideAllViews();
-    document.getElementById(pageId + '-page').style.display = 'block';
-    currentView = pageId;
-    console.log(`Showing ${pageId} page`);
+    const pageElement = document.getElementById(pageId + '-page');
+    if (pageElement) {
+        console.log(`Found ${pageId}-page element, displaying...`);
+        pageElement.style.display = 'block';
+        currentView = pageId;
+        
+        // Initialize page-specific functionality with a small delay
+        setTimeout(() => {
+            if (pageId === 'workoutcreator' && window.initializeWorkoutCreator) {
+                console.log("Calling initializeWorkoutCreator...");
+                try {
+                    // Force reload saved days
+                    window.savedDays = null;
+                    window.initializeWorkoutCreator();
+                } catch (error) {
+                    console.error("Error in initializeWorkoutCreator:", error);
+                }
+            }
+            if (pageId === 'daymaker') {
+                console.log("Reloading saved days for Day Maker...");
+                // Force reload of saved days
+                if (window.loadSavedDays && window.renderSavedDays) {
+                    window.loadSavedDays();
+                    window.renderSavedDays();
+                }
+            }
+        }, 100); // Increased delay to ensure DOM is ready
+    } else {
+        console.error(`Page ${pageId}-page not found!`);
+    }
 }
 
 // Set up navigation buttons
 document.addEventListener('DOMContentLoaded', function() {
-    // Add click handlers to fitness navigation buttons
+    // Add click handlers to fitness navigation buttons (in calendar)
     document.querySelectorAll('.nav-btn').forEach(button => {
         button.addEventListener('click', function() {
             const pageId = this.getAttribute('data-page');
@@ -528,26 +569,43 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Add click handlers to back buttons
+    // Add click handlers to back buttons in full pages
     document.querySelectorAll('.back-btn').forEach(button => {
-        button.addEventListener('click', showCalendarView);
+        // Check if it's the daymaker back button (special case)
+        if (button.id === 'daymaker-back') {
+            button.addEventListener('click', () => {
+                showFitnessPage('workout');
+            });
+        } 
+        // ADD THIS for workoutcreator back button
+        else if (button.id === 'workoutcreator-back') {
+            button.addEventListener('click', () => {
+                showFitnessPage('workout');
+            });
+        } 
+        else {
+            button.addEventListener('click', showCalendarView);
+        }
+    });
+    
+    // Add click handlers to workout option buttons (in workout builder)
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.workout-option-btn')) {
+            const pageId = e.target.closest('.workout-option-btn').getAttribute('data-page');
+            showFitnessPage(pageId);
+        }
     });
     
     // Optional: Add keyboard navigation (Esc to go back)
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && currentView !== 'calendar') {
-            showCalendarView();
+            if (currentView === 'daymaker' || currentView === 'workoutcreator') {
+                showFitnessPage('workout');
+            } else {
+                showCalendarView();
+            }
         }
     });
     
-    console.log('Fitness navigation loaded');
+    console.log('Navigation system loaded');
 });
-
-// Optional: Add keyboard shortcut (Esc to go back)
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        goBackToCalendar();
-    }
-});
-
-console.log('Fitness navigation loaded');
