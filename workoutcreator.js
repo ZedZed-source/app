@@ -1,78 +1,215 @@
-// workoutcreator.js - SIMPLE WORKING VERSION
+// workoutcreator.js - CLEAN FIXED VERSION
 console.log("Workout Creator JS loaded");
 
 let currentWeek = 1;
 let selectedDay = null;
 let workoutPlan = null;
+let savedDays = [];
 
 // Initialize
-function initializeWorkoutCreator() {
+async function initializeWorkoutCreator() {
     console.log("Initializing Workout Creator...");
     
-    // ALWAYS load fresh from localStorage
-    const savedDays = JSON.parse(localStorage.getItem('workoutDays') || '[]');
-    console.log("Workout Creator loaded days:", savedDays.length);
-    
-    // Load or create workout plan
-    loadWorkoutPlan();
-    
-    // Setup event listeners
-    setupEventListeners();
-    
-    // Render with the loaded days
-    renderCalendar(savedDays);
-    
-    console.log("Workout Creator initialized!");
+    try {
+        // Load saved days
+        loadSavedDays();
+        
+        // Load or create workout plan
+        loadWorkoutPlan();
+        
+        // Setup event listeners
+        setupEventListeners();
+        
+        // Render with the loaded days
+        renderCalendar();
+        
+        console.log("Workout Creator initialized!");
+    } catch (error) {
+        console.error("Error initializing Workout Creator:", error);
+        showNotification("Error initializing workout creator", "error", "Initialization Error");
+    }
 }
 
-// Load workout plan
-function loadWorkoutPlan() {
-    const saved = localStorage.getItem('currentWorkoutPlan');
-    
+// Load saved days from localStorage
+function loadSavedDays() {
+    const saved = localStorage.getItem('workoutDays');
     if (saved) {
-        workoutPlan = JSON.parse(saved);
+        try {
+            savedDays = JSON.parse(saved);
+            console.log(`Loaded ${savedDays.length} saved days`);
+        } catch (error) {
+            console.error("Error parsing saved days:", error);
+            savedDays = [];
+        }
     } else {
-        workoutPlan = {
-            id: 'plan-' + Date.now(),
-            name: 'My Workout Plan',
-            schedule: Array(14).fill(null).map((_, index) => ({
-                id: index + 1,
-                dayNumber: index + 1,
-                assignedDayId: null,
-                isRestDay: true,
-                notes: ''
-            })),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
+        savedDays = [];
+        console.log("No saved days found");
+    }
+}
+
+// Load workout plan (for editing) or create new one
+function loadWorkoutPlan() {
+    // Check if we're editing an existing workout
+    const editWorkoutId = localStorage.getItem('editingWorkoutId');
+    
+    if (editWorkoutId) {
+        // Load the workout being edited
+        const allPlans = getAllWorkoutPlans();
+        workoutPlan = allPlans.find(plan => plan.id === editWorkoutId);
+        
+        if (workoutPlan) {
+            console.log("Editing existing workout plan:", workoutPlan.name);
+        } else {
+            // Create new plan
+            createNewWorkoutPlan();
+        }
+        
+        // Clear the editing flag
+        localStorage.removeItem('editingWorkoutId');
+    } else {
+        // Create new plan
+        createNewWorkoutPlan();
     }
     
+    // Update the name input
     const nameInput = document.getElementById('workout-name');
-    if (nameInput) {
+    if (nameInput && workoutPlan) {
         nameInput.value = workoutPlan.name;
     }
 }
 
-// Save workout plan
-function saveWorkoutPlan() {
+// Create a new workout plan
+function createNewWorkoutPlan() {
+    workoutPlan = {
+        id: 'workout-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        name: 'New Workout Plan',
+        schedule: Array(14).fill(null).map((_, index) => ({
+            id: index + 1,
+            dayNumber: index + 1,
+            assignedDayId: null,
+            isRestDay: true,
+            notes: ''
+        })),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+    console.log("Created new workout plan");
+}
+
+// Get ALL workout plans from localStorage
+function getAllWorkoutPlans() {
+    try {
+        const saved = localStorage.getItem('workoutPlans');
+        const plans = saved ? JSON.parse(saved) : [];
+        console.log(`Found ${plans.length} saved workout plans`);
+        return plans;
+    } catch (error) {
+        console.error('Error getting workout plans:', error);
+        return [];
+    }
+}
+
+// Save workout plan to localStorage (does NOT set as active)
+// Save workout plan to localStorage (does NOT set as active)
+async function saveWorkoutPlan() {
+    // Update name from input
     const nameInput = document.getElementById('workout-name');
-    if (nameInput) {
-        workoutPlan.name = nameInput.value.trim() || 'My Workout Plan';
+    if (nameInput && workoutPlan) {
+        const newName = nameInput.value.trim();
+        if (newName) {
+            workoutPlan.name = newName;
+        }
+    }
+    
+    if (!workoutPlan) {
+        showNotification("No workout plan to save", "error", "Save Error");
+        return;
     }
     
     workoutPlan.updatedAt = new Date().toISOString();
-    localStorage.setItem('currentWorkoutPlan', JSON.stringify(workoutPlan));
     
-    // Also save as current workout
-    localStorage.setItem('currentWorkout', JSON.stringify({
-        id: workoutPlan.id,
-        name: workoutPlan.name,
-        schedule: workoutPlan.schedule.map(day => ({
+    // Get all existing plans
+    const allPlans = getAllWorkoutPlans();
+    
+    // Check if this plan already exists
+    const existingIndex = allPlans.findIndex(plan => plan.id === workoutPlan.id);
+    
+    if (existingIndex !== -1) {
+        // Update existing plan
+        allPlans[existingIndex] = workoutPlan;
+        console.log(`Updated existing workout plan: ${workoutPlan.name}`);
+    } else {
+        // Add new plan
+        allPlans.push(workoutPlan);
+        console.log(`Added new workout plan: ${workoutPlan.name}`);
+    }
+    
+    // Save all plans back to localStorage
+    localStorage.setItem('workoutPlans', JSON.stringify(allPlans));
+    
+    // Ask user if they want to set this as active using dialog manager
+    const confirmed = await window.dialogManager.confirm({
+        title: "Save Workout Plan",
+        message: `"${workoutPlan.name}" saved successfully!`,
+        details: "Would you like to set this as your active workout plan?",
+        cancelText: "No, Just Save",
+        confirmText: "Yes, Set as Active"
+    });
+    
+    if (confirmed) {
+        console.log("User confirmed - setting as active workout");
+        console.log("Workout plan to set as active:", workoutPlan);
+        
+        // Create a simplified version for current workout
+        const simplifiedSchedule = workoutPlan.schedule.map(day => ({
             dayId: day.assignedDayId,
-            dayName: 'Workout Day',
+            dayName: day.assignedDayId ? 
+                savedDays.find(d => d.id === day.assignedDayId)?.name : 'Rest Day',
             isRestDay: day.isRestDay
-        }))
-    }));
+        }));
+        
+        const currentWorkoutData = {
+            id: workoutPlan.id,
+            name: workoutPlan.name,
+            schedule: simplifiedSchedule,
+            createdAt: workoutPlan.createdAt,
+            updatedAt: workoutPlan.updatedAt
+        };
+        
+        console.log("Current workout data to save:", currentWorkoutData);
+        
+        // Save to localStorage
+        localStorage.setItem('currentWorkout', JSON.stringify(currentWorkoutData));
+        console.log("Saved to localStorage under 'currentWorkout'");
+        
+        // Check if saved correctly
+        const saved = localStorage.getItem('currentWorkout');
+        console.log("Retrieved from localStorage:", saved);
+        
+        // Update current workout manager if available
+        if (window.currentWorkoutManager) {
+            console.log("Current workout manager found, calling setCurrentWorkout...");
+            // Use the manager's method to ensure proper event dispatching
+            const success = await window.currentWorkoutManager.setCurrentWorkout(currentWorkoutData);
+            console.log("setCurrentWorkout result:", success ? "Success" : "Failed");
+        } else {
+            console.log("Current workout manager NOT found!");
+            // Fallback: dispatch event manually
+            const event = new CustomEvent('currentWorkoutChanged');
+            window.dispatchEvent(event);
+            console.log("Dispatched currentWorkoutChanged event");
+        }
+        
+        showNotification(`"${workoutPlan.name}" is now your active workout plan!`, "success", "Workout Activated");
+    } else {
+        console.log("User chose not to set as active, just saving");
+        showNotification(`"${workoutPlan.name}" saved successfully!`, "success", "Workout Saved");
+    }
+    
+    // Go back to workout builder
+    setTimeout(() => {
+        showFitnessPage('workout');
+    }, 1000);
 }
 
 // Setup event listeners
@@ -107,9 +244,8 @@ function setupEventListeners() {
     
     const saveBtn = document.getElementById('save-workout-btn');
     if (saveBtn) {
-        saveBtn.addEventListener('click', function() {
-            saveWorkoutPlan();
-            alert('Workout plan saved successfully!');
+        saveBtn.addEventListener('click', async function() {
+            await saveWorkoutPlan();
         });
     }
     
@@ -159,8 +295,8 @@ function showWeek(weekNumber) {
 }
 
 // Render calendar
-function renderCalendar(savedDays) {
-    console.log("Rendering calendar with days:", savedDays);
+function renderCalendar() {
+    console.log("Rendering calendar with saved days:", savedDays.length);
     
     for (let week = 1; week <= 2; week++) {
         const weekElement = document.getElementById(`week-${week}`);
@@ -177,7 +313,7 @@ function renderCalendar(savedDays) {
         
         for (let i = 0; i < 7; i++) {
             const dayNumber = startDay + i + 1;
-            const daySchedule = workoutPlan.schedule[dayNumber - 1];
+            const daySchedule = workoutPlan && workoutPlan.schedule ? workoutPlan.schedule[dayNumber - 1] : null;
             
             const dayElement = document.createElement('div');
             dayElement.className = 'calendar-day';
@@ -213,7 +349,7 @@ function renderCalendar(savedDays) {
             `;
             
             dayElement.addEventListener('click', function() {
-                openDayModal(dayNumber, savedDays);
+                openDayModal(dayNumber);
             });
             
             calendarGrid.appendChild(dayElement);
@@ -224,7 +360,7 @@ function renderCalendar(savedDays) {
 }
 
 // Open day modal
-function openDayModal(dayNumber, savedDays) {
+function openDayModal(dayNumber) {
     selectedDay = dayNumber;
     
     const modal = document.getElementById('day-modal');
@@ -295,7 +431,7 @@ function openDayModal(dayNumber, savedDays) {
             </div>
         `;
         noDaysOption.addEventListener('click', function() {
-            alert('Please create workout days in Day Maker first!');
+            showNotification('Please create workout days in Day Maker first!', 'warning', 'No Saved Days');
         });
         optionsContainer.appendChild(noDaysOption);
     }
@@ -314,7 +450,7 @@ function closeModal() {
 
 // Assign day to calendar
 function assignDayToCalendar(dayId, isRestDay) {
-    if (!selectedDay) return;
+    if (!selectedDay || !workoutPlan) return;
     
     const dayIndex = selectedDay - 1;
     
@@ -324,11 +460,7 @@ function assignDayToCalendar(dayId, isRestDay) {
         workoutPlan.schedule[dayIndex].updatedAt = new Date().toISOString();
     }
     
-    // Reload days fresh and re-render
-    const savedDays = JSON.parse(localStorage.getItem('workoutDays') || '[]');
-    renderCalendar(savedDays);
-    
-    saveWorkoutPlan();
+    renderCalendar();
 }
 
 // Make available globally

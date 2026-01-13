@@ -59,6 +59,84 @@ const eventsArr = [];
 getEvents();
 console.log(eventsArr);
 
+// ============================================
+// NOTIFICATION SYSTEM
+// ============================================
+
+function showNotification(message, type = 'success', title = null) {
+    // Create notification container if it doesn't exist
+    let container = document.getElementById('notification-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notification-container';
+        container.className = 'notification-container';
+        document.body.appendChild(container);
+    }
+    
+    // Default titles based on type
+    const defaultTitles = {
+        'success': 'Success',
+        'error': 'Error',
+        'warning': 'Warning',
+        'info': 'Information'
+    };
+    
+    const notificationTitle = title || defaultTitles[type];
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    
+    // Icons for different notification types
+    const icons = {
+        'success': '✓',
+        'error': '✗',
+        'warning': '⚠',
+        'info': 'ℹ'
+    };
+    
+    notification.innerHTML = `
+        <div class="notification-icon">${icons[type]}</div>
+        <div class="notification-content">
+            <div class="notification-title">${notificationTitle}</div>
+            <div class="notification-message">${message}</div>
+        </div>
+        <button class="notification-close">&times;</button>
+    `;
+    
+    // Add to container
+    container.appendChild(notification);
+    
+    // Close button functionality
+    const closeBtn = notification.querySelector('.notification-close');
+    closeBtn.addEventListener('click', () => {
+        notification.remove();
+    });
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 3000);
+    
+    return notification;
+}
+
+// Add this to console to check localStorage
+function debugStorage() {
+    console.log("=== LOCALSTORAGE DEBUG ===");
+    console.log("workoutDays:", localStorage.getItem('workoutDays'));
+    console.log("workoutPlans:", localStorage.getItem('workoutPlans'));
+    console.log("currentWorkout:", localStorage.getItem('currentWorkout'));
+    console.log("=== END DEBUG ===");
+}
+
+// Run in console: debugStorage()
+
+// Make it available globally
+window.showNotification = showNotification;
+
 //function to add days in days with class day and prev-date next-date on previous month and next month days and active on today
 function initCalendar() {
   const firstDay = new Date(year, month, 1);
@@ -226,7 +304,7 @@ function gotoDate() {
       return;
     }
   }
-  alert("Invalid Date");
+  showNotification("Invalid date format. Please use mm/yyyy format (e.g., 12/2023).", "error", "Invalid Date");
 }
 
 //function get active day day name and date and update eventday eventdate
@@ -316,7 +394,7 @@ addEventSubmit.addEventListener("click", () => {
   const eventTimeFrom = addEventFrom.value;
   const eventTimeTo = addEventTo.value;
   if (eventTitle === "" || eventTimeFrom === "" || eventTimeTo === "") {
-    alert("Please fill all the fields");
+    showNotification("Please fill all the fields", "error", "Missing Information");
     return;
   }
 
@@ -331,7 +409,7 @@ addEventSubmit.addEventListener("click", () => {
     timeToArr[0] > 23 ||
     timeToArr[1] > 59
   ) {
-    alert("Invalid Time Format");
+    showNotification("Invalid time format. Please use 24-hour format (HH:MM).", "error", "Invalid Time");
     return;
   }
 
@@ -354,7 +432,7 @@ addEventSubmit.addEventListener("click", () => {
     }
   });
   if (eventExist) {
-    alert("Event already added");
+    showNotification("An event with this name already exists for this day.", "warning", "Duplicate Event");
     return;
   }
   const newEvent = {
@@ -512,8 +590,6 @@ function showCalendarView() {
 }
 
 // Function to show a fitness page
-// Function to show a fitness page
-// Function to show a fitness page
 function showFitnessPage(pageId) {
     console.log(`=== showFitnessPage called for: ${pageId} ===`);
     
@@ -538,8 +614,6 @@ function showFitnessPage(pageId) {
             if (pageId === 'workoutcreator' && window.initializeWorkoutCreator) {
                 console.log("Calling initializeWorkoutCreator...");
                 try {
-                    // Force reload saved days
-                    window.savedDays = null;
                     window.initializeWorkoutCreator();
                 } catch (error) {
                     console.error("Error in initializeWorkoutCreator:", error);
@@ -553,7 +627,15 @@ function showFitnessPage(pageId) {
                     window.renderSavedDays();
                 }
             }
-        }, 100); // Increased delay to ensure DOM is ready
+            if (pageId === 'currentworkout' && window.initializeCurrentWorkout) {
+                console.log("Initializing Current Workout page...");
+                try {
+                    window.initializeCurrentWorkout();
+                } catch (error) {
+                    console.error("Error initializing Current Workout:", error);
+                }
+            }
+        }, 50); // Small delay to ensure DOM is ready
     } else {
         console.error(`Page ${pageId}-page not found!`);
     }
@@ -577,12 +659,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 showFitnessPage('workout');
             });
         } 
-        // ADD THIS for workoutcreator back button
+        // Workout creator back button
         else if (button.id === 'workoutcreator-back') {
             button.addEventListener('click', () => {
                 showFitnessPage('workout');
             });
-        } 
+        }
+        // Current workout back button
+        else if (button.id === 'currentworkout-back') {
+            button.addEventListener('click', () => {
+                showFitnessPage('workout');
+            });
+        }
         else {
             button.addEventListener('click', showCalendarView);
         }
@@ -596,10 +684,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Handle Change Current Workout button
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'change-current-workout-btn') {
+            console.log("Change Current Workout button clicked");
+            showFitnessPage('currentworkout');
+        }
+    });
+    
+    // Update current workout preview when workout changes
+    window.addEventListener('currentWorkoutChanged', function() {
+        updateWorkoutBuilderPreview();
+    });
+    
+    // Initialize workout builder preview
+    updateWorkoutBuilderPreview();
+    
     // Optional: Add keyboard navigation (Esc to go back)
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && currentView !== 'calendar') {
-            if (currentView === 'daymaker' || currentView === 'workoutcreator') {
+            if (currentView === 'daymaker' || currentView === 'workoutcreator' || currentView === 'currentworkout') {
                 showFitnessPage('workout');
             } else {
                 showCalendarView();
@@ -609,3 +713,37 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('Navigation system loaded');
 });
+
+// Function to update workout builder preview
+// Function to update workout builder preview
+function updateWorkoutBuilderPreview() {
+    console.log("=== updateWorkoutBuilderPreview called ===");
+    const previewElement = document.getElementById('current-workout-preview');
+    if (!previewElement) {
+        console.log("Preview element not found!");
+        return;
+    }
+    
+    // Check if Current Workout Manager is available
+    if (window.currentWorkoutManager) {
+        console.log("Current workout manager found");
+        console.log("Current workout:", window.currentWorkoutManager.currentWorkout);
+        
+        if (window.currentWorkoutManager.currentWorkout) {
+            const currentWorkout = window.currentWorkoutManager.currentWorkout;
+            previewElement.innerHTML = `
+                <h4>${currentWorkout.name}</h4>
+                <p>${window.currentWorkoutManager.getWorkoutDayCount(currentWorkout)} workout days</p>
+                <small>${window.currentWorkoutManager.getWorkoutDaysSummary(currentWorkout)}</small>
+            `;
+            console.log("Updated preview with:", currentWorkout.name);
+        } else {
+            previewElement.innerHTML = '<p>No workout plan selected</p>';
+            console.log("No current workout found");
+        }
+    } else {
+        console.log("Current workout manager NOT found!");
+        previewElement.innerHTML = '<p>No workout plan selected</p>';
+    }
+    console.log("=== updateWorkoutBuilderPreview finished ===");
+}

@@ -143,7 +143,16 @@
         <h1>💪 Workout Builder</h1>
     </div>
     <div class="page-content">
-        <!-- ADD THESE BUTTONS -->
+        <!-- Current Workout Display -->
+        <div class="current-workout-preview">
+            <h3>Current Workout Plan</h3>
+            <div id="current-workout-preview">
+                <p>No workout plan selected</p>
+            </div>
+            <button class="action-btn" id="change-current-workout-btn">Change Current Workout</button>
+        </div>
+        
+        <!-- Workout Builder Options -->
         <div class="workout-builder-options">
             <button class="workout-option-btn" data-page="daymaker">
                 ⚙️ Day Creator
@@ -311,8 +320,35 @@
     </div>
 </div>
 
+<!-- Current Workout Manager Page (Hidden by default) -->
+<div id="currentworkout-page" class="full-page" style="display: none;">
+    <div class="page-header">
+        <button class="back-btn" id="currentworkout-back">← Back to Workout Builder</button>
+        <h1>📋 Current Workout</h1>
+    </div>
+    
+    <div class="currentworkout-container">
+        <div class="current-workout-section">
+            <h2>Active Workout Plan</h2>
+            <div id="current-workout-display">
+                <p class="no-workout">No workout plan selected</p>
+            </div>
+        </div>
+
+        <div class="workout-plans-list">
+            <h2>Your Workout Plans</h2>
+            <div id="workout-plans-container">
+                <!-- Workout plans will be populated here -->
+            </div>
+        </div>
+    </div>
+</div>
+
     <script src="script.js"></script>
     <script src="daymaker.js"></script>
-    <script src="workoutcreator.js"></script> 
+    <script src="workoutcreator.js"></script>
+    <script src="currentWorkoutManager.js"></script>
+    <script src="currentworkout.js"></script>
+    <script src="dialogManager.js"></script>
   </body>
 </html>

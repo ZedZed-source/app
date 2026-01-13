@@ -1,4 +1,4 @@
-// daymaker.js - SIMPLE WORKING VERSION
+// daymaker.js - COMPLETELY CLEAN VERSION (NO ALERTS)
 console.log("Day Maker JS loaded");
 
 // Simple global storage
@@ -106,12 +106,12 @@ function clearForm() {
 }
 
 // Save day
-function saveDay() {
+async function saveDay() {
     const dayName = document.getElementById('day-name').value.trim();
     const dayIcon = document.getElementById('day-icon').value;
     
     if (!dayName) {
-        alert("Please enter a name for your day");
+        showNotification("Please enter a name for your day", "error", "Missing Information");
         return;
     }
     
@@ -131,6 +131,17 @@ function saveDay() {
         });
     });
     
+    if (exercises.length === 0) {
+        showNotification("Please add at least one exercise", "error", "Missing Exercises");
+        return;
+    }
+    
+    // Check if day with same name exists (for editing)
+    let existingDayIndex = -1;
+    if (currentDayId) {
+        existingDayIndex = window.workoutDays.findIndex(day => day.id === currentDayId);
+    }
+    
     // Create day object
     const dayId = currentDayId || 'day-' + Date.now();
     const workoutDay = {
@@ -143,11 +154,8 @@ function saveDay() {
     };
     
     // Update or add to array
-    if (currentDayId) {
-        const index = window.workoutDays.findIndex(day => day.id === currentDayId);
-        if (index !== -1) {
-            window.workoutDays[index] = workoutDay;
-        }
+    if (currentDayId && existingDayIndex !== -1) {
+        window.workoutDays[existingDayIndex] = workoutDay;
     } else {
         window.workoutDays.push(workoutDay);
     }
@@ -155,7 +163,7 @@ function saveDay() {
     // SAVE TO LOCALSTORAGE
     localStorage.setItem('workoutDays', JSON.stringify(window.workoutDays));
     
-    alert(`"${dayName}" saved successfully with ${exercises.length} exercises!`);
+    showNotification(`"${dayName}" saved successfully with ${exercises.length} ${exercises.length === 1 ? 'exercise' : 'exercises'}!`, "success", "Day Saved");
     clearForm();
     renderSavedDays();
 }
@@ -201,7 +209,7 @@ function renderSavedDays() {
 function loadDay(dayId) {
     const day = window.workoutDays.find(d => d.id === dayId);
     if (!day) {
-        alert("Day not found!");
+        showNotification("Day not found!", "error", "Error");
         return;
     }
     
@@ -227,8 +235,22 @@ function loadDay(dayId) {
 }
 
 // Delete day
-function deleteDay(dayId) {
-    if (confirm('Are you sure you want to delete this day?')) {
+async function deleteDay(dayId) {
+    // Find the day to get its name
+    const dayToDelete = window.workoutDays.find(day => day.id === dayId);
+    if (!dayToDelete) return;
+    
+    // Use dialog manager for confirmation
+    const confirmed = await window.dialogManager.confirm({
+        title: "Delete Day",
+        message: `Are you sure you want to delete "${dayToDelete.name}"?`,
+        details: "This action cannot be undone.",
+        cancelText: "Cancel",
+        confirmText: "Delete",
+        danger: true
+    });
+    
+    if (confirmed) {
         window.workoutDays = window.workoutDays.filter(day => day.id !== dayId);
         
         // SAVE TO LOCALSTORAGE
@@ -237,8 +259,33 @@ function deleteDay(dayId) {
         if (currentDayId === dayId) {
             clearForm();
         }
+        
         renderSavedDays();
-        alert("Day deleted successfully!");
+        showNotification(`"${dayToDelete.name}" deleted successfully!`, "success", "Day Deleted");
+    }
+}
+
+// Clear form with confirmation
+async function clearFormWithConfirmation() {
+    const hasContent = document.getElementById('day-name').value.trim() || 
+                      document.querySelectorAll('.exercise').length > 0;
+    
+    if (!hasContent) {
+        clearForm();
+        return;
+    }
+    
+    const confirmed = await window.dialogManager.confirm({
+        title: "Clear Form",
+        message: "Are you sure you want to clear the form?",
+        details: "Any unsaved changes will be lost.",
+        cancelText: "Keep Editing",
+        confirmText: "Clear Form"
+    });
+    
+    if (confirmed) {
+        clearForm();
+        showNotification("Form cleared", "info", "Form Cleared");
     }
 }
 
@@ -268,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     document.getElementById('clearFormBtn').addEventListener('click', () => {
-        clearForm();
+        clearFormWithConfirmation();
     });
     
     console.log("Day Maker initialized");
