@@ -1,4 +1,4 @@
-// workoutcreator.js - CLEAN FIXED VERSION
+// workoutcreator.js - CLEAN FIXED VERSION (Consistent data handling)
 console.log("Workout Creator JS loaded");
 
 let currentWeek = 1;
@@ -53,8 +53,15 @@ function loadWorkoutPlan() {
     const editWorkoutId = localStorage.getItem('editingWorkoutId');
     
     if (editWorkoutId) {
-        // Load the workout being edited
-        const allPlans = getAllWorkoutPlans();
+        // Load the workout being edited - CONSISTENT with other pages
+        let allPlans = [];
+        if (window.currentWorkoutManager && typeof window.currentWorkoutManager.getAllWorkoutPlans === 'function') {
+            allPlans = window.currentWorkoutManager.getAllWorkoutPlans();
+        } else {
+            const saved = localStorage.getItem('workoutPlans');
+            allPlans = saved ? JSON.parse(saved) : [];
+        }
+        
         workoutPlan = allPlans.find(plan => plan.id === editWorkoutId);
         
         if (workoutPlan) {
@@ -96,11 +103,19 @@ function createNewWorkoutPlan() {
     console.log("Created new workout plan");
 }
 
-// Get ALL workout plans from localStorage
+// Get ALL workout plans from localStorage - CONSISTENT with other pages
 function getAllWorkoutPlans() {
     try {
-        const saved = localStorage.getItem('workoutPlans');
-        const plans = saved ? JSON.parse(saved) : [];
+        let plans = [];
+        
+        // Use same method as other pages
+        if (window.currentWorkoutManager && typeof window.currentWorkoutManager.getAllWorkoutPlans === 'function') {
+            plans = window.currentWorkoutManager.getAllWorkoutPlans();
+        } else {
+            const saved = localStorage.getItem('workoutPlans');
+            plans = saved ? JSON.parse(saved) : [];
+        }
+        
         console.log(`Found ${plans.length} saved workout plans`);
         return plans;
     } catch (error) {
@@ -109,7 +124,6 @@ function getAllWorkoutPlans() {
     }
 }
 
-// Save workout plan to localStorage (does NOT set as active)
 // Save workout plan to localStorage (does NOT set as active)
 async function saveWorkoutPlan() {
     // Update name from input
@@ -128,8 +142,8 @@ async function saveWorkoutPlan() {
     
     workoutPlan.updatedAt = new Date().toISOString();
     
-    // Get all existing plans
-    const allPlans = getAllWorkoutPlans();
+    // Get all existing plans - CONSISTENT with other pages
+    let allPlans = getAllWorkoutPlans();
     
     // Check if this plan already exists
     const existingIndex = allPlans.findIndex(plan => plan.id === workoutPlan.id);
@@ -144,8 +158,15 @@ async function saveWorkoutPlan() {
         console.log(`Added new workout plan: ${workoutPlan.name}`);
     }
     
-    // Save all plans back to localStorage
+    // Save all plans back to localStorage - CRITICAL: Save to correct location
     localStorage.setItem('workoutPlans', JSON.stringify(allPlans));
+    console.log(`✅ Saved "${workoutPlan.name}" to workoutPlans in localStorage`);
+    
+    // Also update currentWorkoutManager if available
+    if (window.currentWorkoutManager && window.currentWorkoutManager.setCurrentWorkout) {
+        // This ensures other pages see the updated data
+        window.currentWorkoutManager.dispatchWorkoutChangedEvent();
+    }
     
     // Ask user if they want to set this as active using dialog manager
     const confirmed = await window.dialogManager.confirm({
@@ -158,7 +179,6 @@ async function saveWorkoutPlan() {
     
     if (confirmed) {
         console.log("User confirmed - setting as active workout");
-        console.log("Workout plan to set as active:", workoutPlan);
         
         // Create a simplified version for current workout
         const simplifiedSchedule = workoutPlan.schedule.map(day => ({
@@ -181,10 +201,6 @@ async function saveWorkoutPlan() {
         // Save to localStorage
         localStorage.setItem('currentWorkout', JSON.stringify(currentWorkoutData));
         console.log("Saved to localStorage under 'currentWorkout'");
-        
-        // Check if saved correctly
-        const saved = localStorage.getItem('currentWorkout');
-        console.log("Retrieved from localStorage:", saved);
         
         // Update current workout manager if available
         if (window.currentWorkoutManager) {

@@ -1,7 +1,7 @@
-// currentWorkoutManager.js - FIXED VERSION (NO DUPLICATE VARIABLES)
+// currentWorkoutManager.js - FIXED VERSION (Consistent with other pages)
 console.log("Current Workout Manager loaded");
 
-// Global current workout variable - DO NOT redeclare currentWeek here
+// Global current workout variable
 window.currentWorkoutManager = null;
 
 class CurrentWorkoutManager {
@@ -30,27 +30,56 @@ class CurrentWorkoutManager {
         }
     }
 
-    // In currentWorkoutManager.js - setCurrentWorkout method
-async setCurrentWorkout(workoutPlan) {
-    this.currentWorkout = workoutPlan;
-    
-    try {
-        // Save to localStorage
-        localStorage.setItem('currentWorkout', JSON.stringify(workoutPlan));
+    // Set current workout - IMPORTANT: Also saves to workoutPlans
+    async setCurrentWorkout(workoutPlan) {
+        this.currentWorkout = workoutPlan;
         
-        // Dispatch event for other parts of the app
-        this.dispatchWorkoutChangedEvent();
-        
-        // Update all displays across the app
-        this.updateAllDisplays();
-        
-        console.log("Set current workout:", workoutPlan.name);
-        return true;
-    } catch (error) {
-        console.error('Error saving current workout:', error);
-        return false;
+        try {
+            // Save to localStorage
+            localStorage.setItem('currentWorkout', JSON.stringify(workoutPlan));
+            
+            // ALSO ensure this workout is in workoutPlans
+            this.saveWorkoutToPlans(workoutPlan);
+            
+            // Dispatch event for other parts of the app
+            this.dispatchWorkoutChangedEvent();
+            
+            // Update all displays across the app
+            this.updateAllDisplays();
+            
+            console.log("Set current workout:", workoutPlan.name);
+            return true;
+        } catch (error) {
+            console.error('Error saving current workout:', error);
+            return false;
+        }
     }
-}
+
+    // Ensure workout is saved in workoutPlans
+    saveWorkoutToPlans(workoutPlan) {
+        try {
+            const saved = localStorage.getItem('workoutPlans');
+            const allPlans = saved ? JSON.parse(saved) : [];
+            
+            // Check if workout already exists in plans
+            const existingIndex = allPlans.findIndex(plan => plan.id === workoutPlan.id);
+            
+            if (existingIndex !== -1) {
+                // Update existing plan
+                allPlans[existingIndex] = workoutPlan;
+            } else {
+                // Add new plan
+                allPlans.push(workoutPlan);
+            }
+            
+            // Save back to localStorage
+            localStorage.setItem('workoutPlans', JSON.stringify(allPlans));
+            console.log(`Saved workout "${workoutPlan.name}" to workoutPlans`);
+            
+        } catch (error) {
+            console.error('Error saving workout to plans:', error);
+        }
+    }
 
     getCurrentWorkout() {
         return this.currentWorkout;
@@ -70,12 +99,12 @@ async setCurrentWorkout(workoutPlan) {
         }
     }
 
-    // Get all saved workout plans
+    // Get all saved workout plans - CRITICAL: This is what other pages use
     getAllWorkoutPlans() {
         try {
             const saved = localStorage.getItem('workoutPlans');
             const plans = saved ? JSON.parse(saved) : [];
-            console.log(`Found ${plans.length} saved workout plans`);
+            console.log(`CurrentWorkoutManager: Found ${plans.length} saved workout plans`);
             return plans;
         } catch (error) {
             console.error('Error getting workout plans:', error);

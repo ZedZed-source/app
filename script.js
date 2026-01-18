@@ -37,24 +37,6 @@ const months = [
   "December",
 ];
 
-// const eventsArr = [
-//   {
-//     day: 13,
-//     month: 11,
-//     year: 2022,
-//     events: [
-//       {
-//         title: "Event 1 lorem ipsun dolar sit genfa tersd dsad ",
-//         time: "10:00 AM",
-//       },
-//       {
-//         title: "Event 2",
-//         time: "11:00 AM",
-//       },
-//     ],
-//   },
-// ];
-
 const eventsArr = [];
 getEvents();
 console.log(eventsArr);
@@ -133,9 +115,7 @@ function debugStorage() {
 }
 
 // Run in console: debugStorage()
-
-// Make it available globally
-window.showNotification = showNotification;
+window.debugStorage = debugStorage;
 
 //function to add days in days with class day and prev-date next-date on previous month and next month days and active on today
 function initCalendar() {
@@ -366,7 +346,6 @@ addEventTitle.addEventListener("input", (e) => {
   addEventTitle.value = addEventTitle.value.slice(0, 60);
 });
 
-
 //allow only time in eventtime from and to
 addEventFrom.addEventListener("input", (e) => {
   addEventFrom.value = addEventFrom.value.replace(/[^0-9:]/g, "");
@@ -504,7 +483,7 @@ eventsContainer.addEventListener("click", (e) => {
         ) {
           event.events.forEach((item, index) => {
             if (item.title === eventTitle) {
-              event.events.splice(index, 1);
+              item.events.splice(index, 1);
             }
           });
           
@@ -635,6 +614,35 @@ function showFitnessPage(pageId) {
                     console.error("Error initializing Current Workout:", error);
                 }
             }
+            if (pageId === 'progressive' && window.initializeProgressive) {
+                console.log("Initializing Progressive Overload page...");
+                try {
+                    window.initializeProgressive();
+                } catch (error) {
+                    console.error("Error initializing Progressive:", error);
+                }
+            }
+            if (pageId === 'analytics' && window.initializeAnalytics) {
+                console.log("Initializing Analytics page...");
+                try {
+                    window.initializeAnalytics();
+                } catch (error) {
+                    console.error("Error initializing Analytics:", error);
+                }
+            }
+            if (pageId === 'spreadsheets' && window.initializeSpreadsheets) {
+                console.log("Initializing Spreadsheets page...");
+                try {
+                    window.initializeSpreadsheets();
+                } catch (error) {
+                    console.error("Error initializing Spreadsheets:", error);
+                }
+            }
+            if (pageId === 'workout') {
+                console.log("On workout builder page - just updating preview");
+                // Only update the current workout preview
+                updateWorkoutBuilderPreview();
+            }
         }, 50); // Small delay to ensure DOM is ready
     } else {
         console.error(`Page ${pageId}-page not found!`);
@@ -671,6 +679,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 showFitnessPage('workout');
             });
         }
+        // Progressive overload back button
+        else if (button.id === 'progressive-back') {
+            button.addEventListener('click', () => {
+                showFitnessPage('workout');
+            });
+        }
+        // Analytics back button
+        else if (button.id === 'analytics-back') {
+            button.addEventListener('click', () => {
+                showFitnessPage('workout');
+            });
+        }
+        // Spreadsheets back button
+        else if (button.id === 'spreadsheets-back') {
+            button.addEventListener('click', () => {
+                showFitnessPage('workout');
+            });
+        }
         else {
             button.addEventListener('click', showCalendarView);
         }
@@ -703,7 +729,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Optional: Add keyboard navigation (Esc to go back)
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && currentView !== 'calendar') {
-            if (currentView === 'daymaker' || currentView === 'workoutcreator' || currentView === 'currentworkout') {
+            if (currentView === 'daymaker' || currentView === 'workoutcreator' || 
+                currentView === 'currentworkout' || currentView === 'progressive' ||
+                currentView === 'analytics' || currentView === 'spreadsheets') {
                 showFitnessPage('workout');
             } else {
                 showCalendarView();
@@ -711,10 +739,38 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // ============================================
+    // DATA SYNC FUNCTION (KEEP THIS SIMPLE)
+    // ============================================
+    function syncWorkoutData() {
+        console.log("=== SYNC WORKOUT DATA ===");
+        
+        const workoutPlansStorage = localStorage.getItem('workoutPlans');
+        const workoutDataStorage = localStorage.getItem('workoutData');
+        
+        console.log("workoutPlans in localStorage:", workoutPlansStorage ? JSON.parse(workoutPlansStorage).length : 0);
+        console.log("workoutData in localStorage:", workoutDataStorage ? JSON.parse(workoutDataStorage).length : 0);
+        
+        // SIMPLE SYNC: If workoutData has data but workoutPlans doesn't, copy it
+        if (workoutDataStorage && !workoutPlansStorage) {
+            console.log("Copying workoutData to workoutPlans...");
+            localStorage.setItem('workoutPlans', workoutDataStorage);
+        }
+        // If workoutPlans has data but workoutData doesn't, also sync (optional)
+        else if (workoutPlansStorage && !workoutDataStorage) {
+            console.log("Copying workoutPlans to workoutData...");
+            localStorage.setItem('workoutData', workoutPlansStorage);
+        }
+        
+        console.log("=== SYNC COMPLETE ===");
+    }
+    
+    // Run sync on startup
+    syncWorkoutData();
+    
     console.log('Navigation system loaded');
 });
 
-// Function to update workout builder preview
 // Function to update workout builder preview
 function updateWorkoutBuilderPreview() {
     console.log("=== updateWorkoutBuilderPreview called ===");
@@ -724,26 +780,69 @@ function updateWorkoutBuilderPreview() {
         return;
     }
     
-    // Check if Current Workout Manager is available
-    if (window.currentWorkoutManager) {
-        console.log("Current workout manager found");
-        console.log("Current workout:", window.currentWorkoutManager.currentWorkout);
-        
-        if (window.currentWorkoutManager.currentWorkout) {
-            const currentWorkout = window.currentWorkoutManager.currentWorkout;
-            previewElement.innerHTML = `
-                <h4>${currentWorkout.name}</h4>
-                <p>${window.currentWorkoutManager.getWorkoutDayCount(currentWorkout)} workout days</p>
-                <small>${window.currentWorkoutManager.getWorkoutDaysSummary(currentWorkout)}</small>
-            `;
-            console.log("Updated preview with:", currentWorkout.name);
-        } else {
-            previewElement.innerHTML = '<p>No workout plan selected</p>';
-            console.log("No current workout found");
-        }
+    // Wait for currentWorkoutManager to load if not available
+    if (!window.currentWorkoutManager) {
+        console.log("currentWorkoutManager not available yet, retrying in 100ms...");
+        setTimeout(updateWorkoutBuilderPreview, 100);
+        return;
+    }
+    
+    console.log("Current workout manager found");
+    console.log("Current workout:", window.currentWorkoutManager.currentWorkout);
+    
+    if (window.currentWorkoutManager.currentWorkout) {
+        const currentWorkout = window.currentWorkoutManager.currentWorkout;
+        previewElement.innerHTML = `
+            <h4>${currentWorkout.name}</h4>
+            <p>${window.currentWorkoutManager.getWorkoutDayCount(currentWorkout)} workout days</p>
+            <small>${window.currentWorkoutManager.getWorkoutDaysSummary(currentWorkout)}</small>
+        `;
+        console.log("Updated preview with:", currentWorkout.name);
     } else {
-        console.log("Current workout manager NOT found!");
         previewElement.innerHTML = '<p>No workout plan selected</p>';
+        console.log("No current workout found");
     }
     console.log("=== updateWorkoutBuilderPreview finished ===");
 }
+
+// Workout completion tracking function (for analytics)
+function recordWorkoutCompletion(workoutId, dayId, exercises) {
+    try {
+        const workoutHistory = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+        
+        const workoutSession = {
+            id: 'session-' + Date.now(),
+            workoutId: workoutId,
+            dayId: dayId,
+            date: new Date().toISOString(),
+            exercises: exercises,
+            avgWeight: calculateAverageWeight(exercises)
+        };
+        
+        workoutHistory.push(workoutSession);
+        localStorage.setItem('workoutHistory', JSON.stringify(workoutHistory));
+        
+        console.log(`Recorded workout session for ${workoutId}`);
+        showNotification('Workout completed! Data saved for analytics.', 'success', 'Workout Logged');
+        return true;
+    } catch (error) {
+        console.error("Error recording workout completion:", error);
+        return false;
+    }
+}
+
+function calculateAverageWeight(exercises) {
+    if (!exercises || exercises.length === 0) return 0;
+    
+    const total = exercises.reduce((sum, ex) => {
+        return sum + (parseFloat(ex.weight) || 0);
+    }, 0);
+    
+    return total / exercises.length;
+}
+
+// Make functions globally available
+window.showNotification = showNotification;
+window.showFitnessPage = showFitnessPage;
+window.showCalendarView = showCalendarView;
+window.recordWorkoutCompletion = recordWorkoutCompletion;
