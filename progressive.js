@@ -24,7 +24,7 @@ function initializeProgressive() {
     
     // Load data
     loadActivePlans();
-    loadWorkoutPlans();
+    loadProgressiveWorkoutPlans();  // RENAMED to avoid conflict with spreadsheets.js
     
     console.log('Progressive Overload initialized');
 }
@@ -68,7 +68,7 @@ function displayActivePlans(plans) {
     activePlans = plans;
     
     if (!plans || plans.length === 0) {
-        container.innerHTML = '<p class="no-data">No active progression plans. Create one below.</p>';
+        if (container) container.innerHTML = '<p class="no-data">No active progression plans. Create one below.</p>';
         if (navigation) navigation.style.display = 'none';
         return;
     }
@@ -76,7 +76,8 @@ function displayActivePlans(plans) {
     // Show navigation if we have multiple plans
     if (plans.length > 1 && navigation) {
         navigation.style.display = 'flex';
-        document.getElementById('totalPlans').textContent = plans.length;
+        const totalPlansEl = document.getElementById('totalPlans');
+        if (totalPlansEl) totalPlansEl.textContent = plans.length;
     } else if (navigation) {
         navigation.style.display = 'none';
     }
@@ -223,7 +224,8 @@ function displayEditModal(plan) {
     saveButton.onclick = () => saveEditedProgressivePlan(plan.id);
     container.appendChild(saveButton);
     
-    document.getElementById('editPlanModal').style.display = 'flex';
+    const modal = document.getElementById('editPlanModal');
+    if (modal) modal.style.display = 'flex';
 }
 
 async function saveEditedProgressivePlan(planId) {
@@ -313,22 +315,17 @@ async function deleteProgressivePlan(planId) {
 }
 
 // ============================================
-// FIXED: Uses same data source as other pages
+// RENAMED FUNCTION to avoid conflict with spreadsheets.js
 // ============================================
-// REPLACE the entire loadWorkoutPlans function with this:
-
-async function loadWorkoutPlans() {
+async function loadProgressiveWorkoutPlans() {
     try {
-        console.log("Loading workout plans from localStorage...");
-        
-        // DIRECT localStorage access - NO manager dependency
+        console.log("Loading workout plans for Progressive from localStorage...");
         const saved = localStorage.getItem('workoutPlans');
         const workoutPlans = saved ? JSON.parse(saved) : [];
-        
-        console.log(`Found ${workoutPlans.length} workout plans`);
+        console.log(`Found ${workoutPlans.length} workout plans for Progressive`);
         displayWorkoutPlans(workoutPlans);
     } catch (error) {
-        console.error('Error loading workout plans:', error);
+        console.error('Error loading workout plans for Progressive:', error);
         showNotification('Error loading workout plans', 'error');
     }
 }
@@ -686,6 +683,17 @@ function openPhotosModal() {
 function closePhotosModal() {
     const modal = document.getElementById('photosModal');
     if (modal) modal.style.display = 'none';
+}
+
+function showNotification(message, type = 'info') {
+    // Use the global notification system if available
+    if (window.showNotification && typeof window.showNotification === 'function') {
+        window.showNotification(message, type);
+    } else {
+        // Fallback
+        console.log(`${type}: ${message}`);
+        alert(message);
+    }
 }
 
 // Make functions globally available

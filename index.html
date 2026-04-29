@@ -432,6 +432,10 @@
             <button class="workout-option-btn" data-page="workoutcreator">
                 📋 Workout Creator
             </button>
+             
+            <button class="workout-option-btn" id="view-current-workout-btn">
+                👁️ View Current Workout
+            </button>
             
         </div>
         <p>Build and save your workout routines here.</p>
@@ -842,6 +846,20 @@
     </div>
 </div>
 
+<!-- View Current Workout Page (Hidden by default) -->
+<div id="viewcurrentworkout-page" class="full-page" style="display: none;">
+    <div class="page-header">
+        <button class="back-btn" id="viewcurrentworkout-back">← Back to Workout Builder</button>
+        <h1>📋 Current Workout Details</h1>
+    </div>
+    
+    <div class="view-current-workout-container" style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+        <div id="current-workout-full-details" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <!-- Workout details will be populated here -->
+        </div>
+    </div>
+</div>
+
 <!-- Progress Photos Modal -->
 <div class="modal-overlay" id="photosModal" style="display: none;">
     <div class="modal-content" style="max-width: 900px; height: 80vh;">
@@ -940,5 +958,6 @@
     <script src="spreadsheets.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="analytics-integrated.js"></script>
+    <script src="viewcurrentworkout.js"></script>
   </body>
 </html>

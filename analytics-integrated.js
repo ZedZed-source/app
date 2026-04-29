@@ -11,11 +11,11 @@ let analyticsWorkoutHistory = [];
 function initializeAnalytics() {
     console.log("Initializing Analytics...");
     
-    // Setup back button
+    // Setup back button - FIXED: Now goes to calendar
     const backBtn = document.getElementById('analytics-back');
     if (backBtn) {
         backBtn.addEventListener('click', function() {
-            showFitnessPage('workout');
+            showCalendarView();  // Changed from 'workout' to calendar view
         });
     }
     

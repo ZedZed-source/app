@@ -22,7 +22,7 @@ function initializeSpreadsheets() {
     const backBtn = document.getElementById('spreadsheets-back');
     if (backBtn) {
         backBtn.addEventListener('click', () => {
-            showFitnessPage('workout');
+            showCalendarView();  // CHANGED: Now goes to calendar, not workout
         });
     }
     

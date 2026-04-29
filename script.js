@@ -41,6 +41,9 @@ const eventsArr = [];
 getEvents();
 console.log(eventsArr);
 
+// Store workout events separately
+let workoutEvents = [];
+
 // ============================================
 // NOTIFICATION SYSTEM
 // ============================================
@@ -117,63 +120,225 @@ function debugStorage() {
 // Run in console: debugStorage()
 window.debugStorage = debugStorage;
 
-//function to add days in days with class day and prev-date next-date on previous month and next month days and active on today
-function initCalendar() {
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const prevLastDay = new Date(year, month, 0);
-  const prevDays = prevLastDay.getDate();
-  const lastDate = lastDay.getDate();
-  const day = firstDay.getDay();
-  const nextDays = 7 - lastDay.getDay() - 1;
+// ============================================
+// WORKOUT CALENDAR INTEGRATION
+// ============================================
 
-  date.innerHTML = months[month] + " " + year;
-
-  let days = "";
-
-  for (let x = day; x > 0; x--) {
-    days += `<div class="day prev-date">${prevDays - x + 1}</div>`;
-  }
-
-  for (let i = 1; i <= lastDate; i++) {
-    //check if event is present on that day
-    let event = false;
-    eventsArr.forEach((eventObj) => {
-      if (
-        eventObj.day === i &&
-        eventObj.month === month + 1 &&
-        eventObj.year === year
-      ) {
-        event = true;
-      }
-    });
-    if (
-      i === new Date().getDate() &&
-      year === new Date().getFullYear() &&
-      month === new Date().getMonth()
-    ) {
-      activeDay = i;
-      getActiveDay(i);
-      updateEvents(i);
-      if (event) {
-        days += `<div class="day today active event">${i}</div>`;
-      } else {
-        days += `<div class="day today active">${i}</div>`;
-      }
-    } else {
-      if (event) {
-        days += `<div class="day event">${i}</div>`;
-      } else {
-        days += `<div class="day ">${i}</div>`;
-      }
+// Load workout events from current workout
+// FIXED: Load workout events from current workout
+function loadWorkoutEvents() {
+    workoutEvents = [];
+    
+    try {
+        const saved = localStorage.getItem('currentWorkout');
+        if (!saved) {
+            console.log("No current workout found");
+            return;
+        }
+        
+        const currentWorkout = JSON.parse(saved);
+        console.log("Current workout:", currentWorkout);
+        
+        if (!currentWorkout || !currentWorkout.schedule) {
+            console.log("No schedule in current workout");
+            return;
+        }
+        
+        // Get workout days for icons
+        const savedDays = localStorage.getItem('workoutDays');
+        const workoutDays = savedDays ? JSON.parse(savedDays) : [];
+        console.log("Workout days available:", workoutDays.length);
+        
+        // Create workout events for the current month being displayed
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+            const currentDate = new Date(year, month, day);
+            const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            
+            // Map Sunday=0 to position 6, Monday=1 to position 0, etc.
+            // This assumes schedule[0] = Monday, schedule[1] = Tuesday, etc.
+            let scheduleIndex;
+            if (dayOfWeek === 0) {
+                scheduleIndex = 6; // Sunday = position 6
+            } else {
+                scheduleIndex = dayOfWeek - 1; // Monday=0, Tuesday=1, etc.
+            }
+            
+            // Check if there's a workout scheduled for this day
+            if (currentWorkout.schedule[scheduleIndex] && 
+                !currentWorkout.schedule[scheduleIndex].isRestDay) {
+                
+                const dayData = currentWorkout.schedule[scheduleIndex];
+                
+                // Find the workout day details
+                const workoutDay = workoutDays.find(d => d.id === dayData.dayId);
+                
+                if (workoutDay) {
+                    console.log(`Adding workout for ${currentDate.toDateString()}: ${workoutDay.name} (${workoutDay.icon})`);
+                    
+                    workoutEvents.push({
+                        day: day,
+                        month: month + 1,
+                        year: year,
+                        type: 'workout',
+                        icon: workoutDay.icon || '🏋️',
+                        dayName: workoutDay.name || 'Workout',
+                        workoutId: currentWorkout.id
+                    });
+                }
+            }
+        }
+        
+        console.log(`Loaded ${workoutEvents.length} workout events for ${months[month]} ${year}`);
+        
+    } catch (error) {
+        console.error('Error loading workout events:', error);
     }
-  }
+}
 
-  for (let j = 1; j <= nextDays; j++) {
-    days += `<div class="day next-date">${j}</div>`;
-  }
-  daysContainer.innerHTML = days;
-  addListner();
+// Update initCalendar to include workout events
+function initCalendar() {
+    // Load workout events first
+    loadWorkoutEvents();
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const prevLastDay = new Date(year, month, 0);
+    const prevDays = prevLastDay.getDate();
+    const lastDate = lastDay.getDate();
+    const day = firstDay.getDay();
+    const nextDays = 7 - lastDay.getDay() - 1;
+
+    date.innerHTML = months[month] + " " + year;
+
+    let days = "";
+
+    for (let x = day; x > 0; x--) {
+        days += `<div class="day prev-date">${prevDays - x + 1}</div>`;
+    }
+
+    for (let i = 1; i <= lastDate; i++) {
+        // Check for regular events
+        let hasEvent = false;
+        eventsArr.forEach((eventObj) => {
+            if (
+                eventObj.day === i &&
+                eventObj.month === month + 1 &&
+                eventObj.year === year
+            ) {
+                hasEvent = true;
+            }
+        });
+        
+        // Check for workout events
+        let workoutEvent = null;
+        workoutEvents.forEach((eventObj) => {
+            if (
+                eventObj.day === i &&
+                eventObj.month === month + 1 &&
+                eventObj.year === year
+            ) {
+                workoutEvent = eventObj;
+            }
+        });
+        
+        let dayClasses = "day";
+        let workoutIndicator = "";
+        
+        if (hasEvent) {
+            dayClasses += " event";
+        }
+        
+        if (workoutEvent) {
+            dayClasses += " workout-event";
+            workoutIndicator = `<div class="workout-indicator" title="${workoutEvent.dayName}">${workoutEvent.icon}</div>`;
+        }
+        
+        if (
+            i === new Date().getDate() &&
+            year === new Date().getFullYear() &&
+            month === new Date().getMonth()
+        ) {
+            activeDay = i;
+            getActiveDay(i);
+            updateEvents(i);
+            dayClasses += " today active";
+        }
+        
+        days += `<div class="${dayClasses}">${i}${workoutIndicator}</div>`;
+    }
+
+    for (let j = 1; j <= nextDays; j++) {
+        days += `<div class="day next-date">${j}</div>`;
+    }
+    daysContainer.innerHTML = days;
+    addListner();
+}
+
+// ============================================
+// FIXED EVENT DELETION
+// ============================================
+
+// Update the event deletion logic in addListner
+function addListner() {
+    const days = document.querySelectorAll(".day");
+    days.forEach((day) => {
+        day.addEventListener("click", (e) => {
+            // Don't trigger if clicking on workout indicator
+            if (e.target.classList.contains('workout-indicator')) {
+                return;
+            }
+            
+            const dayElement = e.target.classList.contains('workout-indicator') ? e.target.parentElement : e.target;
+            const dayNumber = parseInt(dayElement.textContent.match(/\d+/)?.[0] || dayElement.textContent);
+            
+            if (isNaN(dayNumber)) return;
+            
+            getActiveDay(dayNumber);
+            updateEvents(dayNumber);
+            activeDay = dayNumber;
+            
+            //remove active
+            days.forEach((day) => {
+                day.classList.remove("active");
+            });
+            
+            //if clicked prev-date or next-date switch to that month
+            if (dayElement.classList.contains("prev-date")) {
+                prevMonth();
+                //add active to clicked day after month is changed
+                setTimeout(() => {
+                    //add active where no prev-date or next-date
+                    const days = document.querySelectorAll(".day");
+                    days.forEach((day) => {
+                        if (
+                            !day.classList.contains("prev-date") &&
+                            day.textContent.includes(dayNumber.toString())
+                        ) {
+                            day.classList.add("active");
+                        }
+                    });
+                }, 100);
+            } else if (dayElement.classList.contains("next-date")) {
+                nextMonth();
+                //add active to clicked day after month is changed
+                setTimeout(() => {
+                    const days = document.querySelectorAll(".day");
+                    days.forEach((day) => {
+                        if (
+                            !day.classList.contains("next-date") &&
+                            day.textContent.includes(dayNumber.toString())
+                        ) {
+                            day.classList.add("active");
+                        }
+                    });
+                }, 100);
+            } else {
+                dayElement.classList.add("active");
+            }
+        });
+    });
 }
 
 //function to add month and year on prev and next button
@@ -199,55 +364,6 @@ prev.addEventListener("click", prevMonth);
 next.addEventListener("click", nextMonth);
 
 initCalendar();
-
-//function to add active on day
-function addListner() {
-  const days = document.querySelectorAll(".day");
-  days.forEach((day) => {
-    day.addEventListener("click", (e) => {
-      getActiveDay(e.target.innerHTML);
-      updateEvents(Number(e.target.innerHTML));
-      activeDay = Number(e.target.innerHTML);
-      //remove active
-      days.forEach((day) => {
-        day.classList.remove("active");
-      });
-      //if clicked prev-date or next-date switch to that month
-      if (e.target.classList.contains("prev-date")) {
-        prevMonth();
-        //add active to clicked day afte month is change
-        setTimeout(() => {
-          //add active where no prev-date or next-date
-          const days = document.querySelectorAll(".day");
-          days.forEach((day) => {
-            if (
-              !day.classList.contains("prev-date") &&
-              day.innerHTML === e.target.innerHTML
-            ) {
-              day.classList.add("active");
-            }
-          });
-        }, 100);
-      } else if (e.target.classList.contains("next-date")) {
-        nextMonth();
-        //add active to clicked day afte month is changed
-        setTimeout(() => {
-          const days = document.querySelectorAll(".day");
-          days.forEach((day) => {
-            if (
-              !day.classList.contains("next-date") &&
-              day.innerHTML === e.target.innerHTML
-            ) {
-              day.classList.add("active");
-            }
-          });
-        }, 100);
-      } else {
-        e.target.classList.add("active");
-      }
-    });
-  });
-}
 
 todayBtn.addEventListener("click", () => {
   today = new Date();
@@ -298,6 +414,8 @@ function getActiveDay(date) {
 //function update events when a day is active
 function updateEvents(date) {
   let events = "";
+  
+  // Add regular events
   eventsArr.forEach((event) => {
     if (
       date === event.day &&
@@ -305,7 +423,7 @@ function updateEvents(date) {
       year === event.year
     ) {
       event.events.forEach((event) => {
-        events += `<div class="event">
+        events += `<div class="event" data-event-title="${event.title}">
             <div class="title">
               <i class="fas fa-circle"></i>
               <h3 class="event-title">${event.title}</h3>
@@ -317,6 +435,26 @@ function updateEvents(date) {
       });
     }
   });
+  
+  // Add workout events
+  workoutEvents.forEach((event) => {
+    if (
+      date === event.day &&
+      month + 1 === event.month &&
+      year === event.year
+    ) {
+      events += `<div class="event workout-calendar-event" data-workout-id="${event.workoutId}">
+          <div class="title">
+            <i class="fas fa-dumbbell"></i>
+            <h3 class="event-title">${event.dayName} Workout</h3>
+          </div>
+          <div class="event-time">
+            <span class="event-time">${event.icon} Scheduled</span>
+          </div>
+      </div>`;
+    }
+  });
+  
   if (events === "") {
     events = `<div class="no-event">
             <h3>No Events</h3>
@@ -449,71 +587,89 @@ addEventSubmit.addEventListener("click", () => {
   addEventFrom.value = "";
   addEventTo.value = "";
   updateEvents(activeDay);
-  //select active day and add event class if not added
-  const activeDayEl = document.querySelector(".day.active");
-  if (!activeDayEl.classList.contains("event")) {
-    activeDayEl.classList.add("event");
-  }
+  initCalendar(); // Refresh calendar to show new event dot
 });
 
 // ============================================
-// CONFIRM MODAL FOR EVENT DELETION
+// FIXED: CONFIRM MODAL FOR EVENT DELETION
 // ============================================
 
 const confirmModal = document.getElementById('confirm-modal');
 const confirmYes = document.getElementById('confirm-yes');
 const confirmNo = document.getElementById('confirm-no');
 
-// Replace the event listener for event deletion
+// FIXED: Replace the event listener for event deletion
 eventsContainer.addEventListener("click", (e) => {
-  if (e.target.classList.contains("event")) {
-    const eventTitle = e.target.children[0].children[1].innerHTML;
+  // Check if clicked element is an event (not workout event)
+  const eventElement = e.target.closest('.event');
+  if (eventElement && !eventElement.classList.contains('workout-calendar-event')) {
+    const eventTitle = eventElement.querySelector('.event-title').textContent;
     
-    // Show custom modal instead of confirm()
+    // Show custom modal
     confirmModal.style.display = 'flex';
     
-    // Handle Yes button
+    // Remove any existing listeners first
+    const newConfirmYes = confirmYes.cloneNode(true);
+    const newConfirmNo = confirmNo.cloneNode(true);
+    
+    confirmYes.parentNode.replaceChild(newConfirmYes, confirmYes);
+    confirmNo.parentNode.replaceChild(newConfirmNo, confirmNo);
+    
+    // Update references
+    const currentConfirmYes = newConfirmYes;
+    const currentConfirmNo = newConfirmNo;
+    
+    // Handle Yes button - FIXED VERSION
     const handleYes = () => {
-      // Delete event logic here (your original delete code)
-      eventsArr.forEach((event) => {
+      console.log("Deleting event:", eventTitle);
+      
+      // Find and remove the event
+      eventsArr.forEach((event, index) => {
         if (
           event.day === activeDay &&
           event.month === month + 1 &&
           event.year === year
         ) {
-          event.events.forEach((item, index) => {
-            if (item.title === eventTitle) {
-              item.events.splice(index, 1);
-            }
-          });
-          
-          if (event.events.length === 0) {
-            eventsArr.splice(eventsArr.indexOf(event), 1);
-            const activeDayEl = document.querySelector(".day.active");
-            if (activeDayEl.classList.contains("event")) {
-              activeDayEl.classList.remove("event");
+          // Find the specific event within the day's events
+          const eventIndex = event.events.findIndex(e => e.title === eventTitle);
+          if (eventIndex !== -1) {
+            event.events.splice(eventIndex, 1);
+            
+            // If no more events for this day, remove the entire day entry
+            if (event.events.length === 0) {
+              eventsArr.splice(index, 1);
+              const activeDayEl = document.querySelector(".day.active");
+              if (activeDayEl) {
+                activeDayEl.classList.remove("event");
+              }
             }
           }
         }
       });
+      
+      saveEvents();
       updateEvents(activeDay);
+      initCalendar(); // Refresh calendar to update dots
       confirmModal.style.display = 'none';
-      // Clean up event listeners
-      confirmYes.removeEventListener('click', handleYes);
-      confirmNo.removeEventListener('click', handleNo);
     };
     
     // Handle No button
     const handleNo = () => {
       confirmModal.style.display = 'none';
-      // Clean up event listeners
-      confirmYes.removeEventListener('click', handleYes);
-      confirmNo.removeEventListener('click', handleNo);
     };
     
-    // Add event listeners
-    confirmYes.addEventListener('click', handleYes);
-    confirmNo.addEventListener('click', handleNo);
+    // Add NEW event listeners
+    currentConfirmYes.addEventListener('click', handleYes);
+    currentConfirmNo.addEventListener('click', handleNo);
+    
+    // Also close modal if clicking outside
+    confirmModal.addEventListener('click', function(e) {
+      if (e.target === confirmModal) {
+        confirmModal.style.display = 'none';
+        currentConfirmYes.removeEventListener('click', handleYes);
+        currentConfirmNo.removeEventListener('click', handleNo);
+      }
+    });
   }
 });
 
@@ -565,6 +721,7 @@ function showCalendarView() {
     hideAllViews();
     document.querySelector('.container').style.display = 'flex';
     currentView = 'calendar';
+    initCalendar(); // Refresh calendar when returning
     console.log('Showing calendar view');
 }
 
@@ -638,6 +795,14 @@ function showFitnessPage(pageId) {
                     console.error("Error initializing Spreadsheets:", error);
                 }
             }
+            if (pageId === 'viewcurrentworkout' && window.initializeViewCurrentWorkout) {
+                console.log("Initializing View Current Workout page...");
+                try {
+                    window.initializeViewCurrentWorkout();
+                } catch (error) {
+                    console.error("Error initializing View Current Workout:", error);
+                }
+            }
             if (pageId === 'workout') {
                 console.log("On workout builder page - just updating preview");
                 // Only update the current workout preview
@@ -685,14 +850,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 showFitnessPage('workout');
             });
         }
-        // Analytics back button
+        // Analytics back button - FIXED: Now goes to calendar
         else if (button.id === 'analytics-back') {
             button.addEventListener('click', () => {
-                showFitnessPage('workout');
+                showCalendarView();  // Changed from 'workout' to calendar view
             });
         }
-        // Spreadsheets back button
+        // Spreadsheets back button - FIXED: Now goes to calendar
         else if (button.id === 'spreadsheets-back') {
+            button.addEventListener('click', () => {
+                showCalendarView();  // Changed from 'workout' to calendar view
+            });
+        }
+        // View Current Workout back button
+        else if (button.id === 'viewcurrentworkout-back') {
             button.addEventListener('click', () => {
                 showFitnessPage('workout');
             });
@@ -705,8 +876,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add click handlers to workout option buttons (in workout builder)
     document.addEventListener('click', function(e) {
         if (e.target.closest('.workout-option-btn')) {
-            const pageId = e.target.closest('.workout-option-btn').getAttribute('data-page');
-            showFitnessPage(pageId);
+            const btn = e.target.closest('.workout-option-btn');
+            const pageId = btn.getAttribute('data-page');
+            
+            // Handle View Current Workout button (which has an id instead of data-page)
+            if (btn.id === 'view-current-workout-btn') {
+                console.log("View Current Workout button clicked");
+                showFitnessPage('viewcurrentworkout');
+            } else if (pageId) {
+                showFitnessPage(pageId);
+            }
         }
     });
     
@@ -721,6 +900,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update current workout preview when workout changes
     window.addEventListener('currentWorkoutChanged', function() {
         updateWorkoutBuilderPreview();
+        // Refresh calendar when workout changes
+        initCalendar();
     });
     
     // Initialize workout builder preview
@@ -731,7 +912,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Escape' && currentView !== 'calendar') {
             if (currentView === 'daymaker' || currentView === 'workoutcreator' || 
                 currentView === 'currentworkout' || currentView === 'progressive' ||
-                currentView === 'analytics' || currentView === 'spreadsheets') {
+                currentView === 'analytics' || currentView === 'spreadsheets' ||
+                currentView === 'viewcurrentworkout') {
                 showFitnessPage('workout');
             } else {
                 showCalendarView();
